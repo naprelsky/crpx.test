@@ -15,7 +15,7 @@ extern CCropixMFCApp mfcApp;
 CListCtrl lstReport;
 CComboBox cmbCompany;
 
-std::vector<ReportItem> reportItems;
+ReportTreeNode m_reportTree;
 
 CCropixMFCDlg::CCropixMFCDlg(CWnd* pParent): CDialogEx(IDD_CROPIXMFC_DIALOG, pParent)
 {
@@ -46,8 +46,8 @@ BOOL CCropixMFCDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);
 
 	lstReport.InsertColumn(0, _T("Ëèöî"), LVCFMT_LEFT, 200);
-	lstReport.InsertColumn(1, _T("Ñâÿçü ìåæäó ëèöàìè"), LVCFMT_LEFT, 250);
-	lstReport.InsertColumn(2, _T("Îñíîâàíèå"), LVCFMT_LEFT, 150);
+	lstReport.InsertColumn(1, _T("Ñâÿçü ìåæäó ëèöàìè"), LVCFMT_LEFT, 450);
+	lstReport.InsertColumn(2, _T("Îñíîâàíèå"), LVCFMT_LEFT, 200);
 
 	auto persons = m_emulator->getAllPersonsName();
 	for each (std::string person in persons)
@@ -80,17 +80,30 @@ void CCropixMFCDlg::OnBnClickedBtnReport()
 
 LRESULT CCropixMFCDlg::OnUpdateReport(WPARAM wParam, LPARAM lParam)
 {
-	for (int i = 0; i < reportItems.size(); ++i) {
-		auto item = reportItems.at(i);
-
-		int nIndex = lstReport.InsertItem(i, encoding::cp1251_to_utf16(item.ñompanyName).c_str());
-		lstReport.SetItemText(nIndex, 1, encoding::cp1251_to_utf16(item.relations).c_str());
-		lstReport.SetItemText(nIndex, 2, encoding::cp1251_to_utf16(item.basis).c_str());
-	}
-
+	int index = 0;
+	GenerateReportNode(&m_reportTree, &index);
 	GetDlgItem(IDC_BTN_REPORT)->EnableWindow(TRUE);
-
 	return 0;
+}
+
+void CCropixMFCDlg::GenerateReportNode(ReportTreeNode* node, int* index)
+{
+	for each (ReportTreeNode child in node->childs)
+	{
+		int nIndex = lstReport.InsertItem((*index)++, encoding::cp1251_to_utf16(child.data.ñompany.Name).c_str());
+		lstReport.SetItemText(nIndex, 1, encoding::cp1251_to_utf16(child.data.relation).c_str());
+		lstReport.SetItemText(nIndex, 2, encoding::cp1251_to_utf16(child.data.basis).c_str());
+
+		if (child.childs.size() > 0) {
+			for each (ReportTreeNode var in child.childs)
+			{
+				int nIndex = lstReport.InsertItem((*index)++, L"");
+				lstReport.SetItemText(nIndex, 1, encoding::cp1251_to_utf16(var.data.relation).c_str());
+				lstReport.SetItemText(nIndex, 2, encoding::cp1251_to_utf16(var.data.basis).c_str());
+			}
+			GenerateReportNode(&child, index);
+		}
+	}
 }
 
 UINT CCropixMFCDlg::GenerateReportThread(LPVOID pParam)
@@ -102,7 +115,7 @@ UINT CCropixMFCDlg::GenerateReportThread(LPVOID pParam)
 	pCombo->GetLBText(pCombo->GetCurSel(), value);
 
 	std::string companyName = CStringA(value);
-	reportItems = pDlg->m_emulator->getReport(companyName);
+	m_reportTree = pDlg->m_emulator->getReport(companyName);
 	::PostMessage(pDlg->m_hWnd, WM_UPDATE_REPORT, 1, 0);
 
 	return 0;

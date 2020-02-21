@@ -20,4 +20,5 @@ protected:
 
 private:
 	static UINT GenerateReportThread(LPVOID pParam);
+	void GenerateReportNode(ReportTreeNode* node, int* index);
 };

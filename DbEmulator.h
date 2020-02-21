@@ -72,9 +72,16 @@ struct PowerToGiveDirections
 
 struct ReportItem
 {
-	std::string ñompanyName;
-	std::string relations;
+	Person ñompany;
+	std::string relation;
 	std::string basis;
+};
+
+struct ReportTreeNode
+{
+	ReportItem data;
+	ReportTreeNode* parent;
+	std::vector<ReportTreeNode> childs;
 };
 
 class DbEmulator
@@ -83,8 +90,8 @@ public:
 	DbEmulator();
 
 	StringsVector getAllPersonsName();
-	std::vector<ReportItem> getReport(const std::string& companyName);
-
+	ReportTreeNode getReport(const std::string& companyName);
+	
 private:
 	Table<Person> legalPersons;
 	Table<Person> individuals;
@@ -93,5 +100,7 @@ private:
 	Table<PowerToGiveDirections> powerToGiveDirections;
 
 	void loadData();
+	std::vector<ReportItem> getLinkedCompanies(const Person& person, bool dual = false);
+	void fillReportNode(ReportTreeNode* node);
 };
 
